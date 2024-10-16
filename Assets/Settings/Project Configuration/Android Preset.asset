@@ -1,5 +1,21 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-4452058513553575565
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3299c16869454975b928c0761988a32b, type: 3}
+  m_Name: RenderEyeToTextureURP
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  m_shader: {fileID: 4800000, guid: b6f2d69620d8d874287d0b78115bebfb, type: 3}
+  m_renderTargetTextureLeft: {fileID: 8400000, guid: c595ba2f79abc4245a696cb5a3dbe98b, type: 2}
+  m_renderTargetTextureRight: {fileID: 8400000, guid: d9f08d0ddedb2d8479eadc959cbc75c7, type: 2}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24,8 +40,9 @@ MonoBehaviour:
     probeSamplingDebugMesh: {fileID: 0}
     probeSamplingDebugTexture: {fileID: 0}
     probeVolumeBlendStatesCS: {fileID: 0}
-  m_RendererFeatures: []
-  m_RendererFeatureMap: 
+  m_RendererFeatures:
+  - {fileID: -4452058513553575565}
+  m_RendererFeatureMap: 73b162b45e1c37c2
   m_UseNativeRenderPass: 1
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
   postProcessData: {fileID: 0}
