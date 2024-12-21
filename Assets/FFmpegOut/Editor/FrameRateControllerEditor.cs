@@ -41,24 +41,11 @@ namespace FFmpegOut
                 }
                 else
                 {
-                    int vSyncCount =
-                        ((FrameRateController)target).CalculateVSyncCount();
-
-                    if (vSyncCount == 0)
-                    {
-                        EditorGUILayout.HelpBox(
-                            "V-sync will be disabled because the specified " +
-                            "frame rate is not divisible by the screen " +
-                            "refresh rate.", MessageType.None
-                        );
-                    }
-                    else
-                    {
-                        EditorGUILayout.HelpBox(
-                            "V-sync count will be set to " + vSyncCount,
-                            MessageType.None
-                        );
-                    }
+                    EditorGUILayout.HelpBox(
+                        "V-sync will be disabled because the specified " +
+                        "frame rate is not divisible by the screen " +
+                        "refresh rate.", MessageType.None
+                    );
                 }
             }
 
