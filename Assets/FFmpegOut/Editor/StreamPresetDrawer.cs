@@ -25,22 +25,22 @@ namespace FFmpegOut.LiveStream
             string tooltip = string.Empty;
             switch (p)
             {
-                case StreamPreset.Udp:
+                case StreamPreset.UDP:
                 tooltip = @"[udp adress]; e.g. udp://127.0.0.1:10755";
                 break;
-                case StreamPreset.Rtp:
+                case StreamPreset.RTP:
                 tooltip = @"[rtp adress]; e.g. rtp://127.0.0.1:10755";
                 break;
-                case StreamPreset.Rtsp:
+                case StreamPreset.RTSP:
                 tooltip = @"[rtsp adress]; e.g. rtsp://127.0.0.1:10755";
                 break;
-                case StreamPreset.Hls:
+                case StreamPreset.HLS:
                 tooltip = @"[http server base url] [htdocs directory path + m3u8 file name extension]; e.g. http://127.0.0.1:8000/ D:\[ServerLocation]\htdocs\stream.m3u8";
                 break;
-                case StreamPreset.Hls_ssegment:
+                case StreamPreset.HLS_SSEGMENT:
                 tooltip = @"[http server base url] -segment_list [htdocs directory path + m3u8 file name extension] [htdocs directory path + ts file name extension]; e.g. http://127.0.0.185:8000/ -segment_list D:\[ServerLocation]\htdocs\stream.m3u8 D:\[ServerLocation]\htdocs\out%03d.ts";
                 break;
-                case StreamPreset.Rtmp:
+                case StreamPreset.RTMP:
                 tooltip = @"[rtmp adress]; e.g. rtmp://127.0.0.1:1935/rtmp_stream/mystream";
                 break;
             }

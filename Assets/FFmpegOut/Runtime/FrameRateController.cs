@@ -3,46 +3,51 @@
 
 using UnityEngine;
 using System.Collections;
+using UnityEngine.Serialization;
 
 namespace FFmpegOut
 {
     [AddComponentMenu("FFmpegOut/Frame Rate Controller")]
     public sealed class FrameRateController : MonoBehaviour
     {
-        [SerializeField] float _frameRate = 60;
-        [SerializeField] bool _offlineMode = true;
+        [FormerlySerializedAs("_frameRate")]
+        [SerializeField]
+        private float m_frameRate = 60;
+        [FormerlySerializedAs("_offlineMode")]
+        [SerializeField]
+        private bool m_offlineMode = true;
 
-        int _originalFrameRate;
-        int _originalVSyncCount;
+        private int m_originalFrameRate;
+        private int m_originalVSyncCount;
 
-        void OnEnable()
+        private void OnEnable()
         {
-            int ifps = Mathf.RoundToInt(_frameRate);
+            int ifps = Mathf.RoundToInt(m_frameRate);
 
-            if (_offlineMode)
+            if (m_offlineMode)
             {
-                _originalFrameRate = Time.captureFramerate;
+                m_originalFrameRate = Time.captureFramerate;
                 Time.captureFramerate = ifps;
             }
             else
             {
-                _originalFrameRate = Application.targetFrameRate;
-                _originalVSyncCount = QualitySettings.vSyncCount;
+                m_originalFrameRate = Application.targetFrameRate;
+                m_originalVSyncCount = QualitySettings.vSyncCount;
                 Application.targetFrameRate = ifps;
                 QualitySettings.vSyncCount = 0;
             }
         }
 
-        void OnDisable()
+        private void OnDisable()
         {
-            if (_offlineMode)
+            if (m_offlineMode)
             {
-                Time.captureFramerate = _originalFrameRate;
+                Time.captureFramerate = m_originalFrameRate;
             }
             else
             {
-                Application.targetFrameRate = _originalFrameRate;
-                QualitySettings.vSyncCount = _originalVSyncCount;
+                Application.targetFrameRate = m_originalFrameRate;
+                QualitySettings.vSyncCount = m_originalVSyncCount;
             }
         }
     }

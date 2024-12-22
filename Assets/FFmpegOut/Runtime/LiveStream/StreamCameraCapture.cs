@@ -1,21 +1,24 @@
 ﻿using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace FFmpegOut.LiveStream
 {
     public class StreamCameraCapture : CameraCapture
     {
-        [SerializeField] protected StreamPreset _streamPreset;
-        [SerializeField] protected string _streamAddress;
+        [FormerlySerializedAs("_streamPreset")]
+        [SerializeField] protected StreamPreset StreamPreset;
+        [FormerlySerializedAs("_streamAddress")]
+        [SerializeField] protected string StreamAddress;
 
         protected override FFmpegSession GetSession(int texWidth, int texHeight)
         {
             return StreamFFmpegSession.Create(
                 texWidth,
                 texHeight,
-                frameRate,
-                preset,
-                _streamPreset,
-                _streamAddress);
+                FrameRate,
+                Preset,
+                StreamPreset,
+                StreamAddress);
         }
     }
 }

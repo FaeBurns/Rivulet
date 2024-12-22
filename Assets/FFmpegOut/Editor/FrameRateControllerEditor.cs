@@ -15,8 +15,8 @@ namespace FFmpegOut
 
         void OnEnable()
         {
-            _frameRate = serializedObject.FindProperty("_frameRate");
-            _offlineMode = serializedObject.FindProperty("_offlineMode");
+            _frameRate = serializedObject.FindProperty("m_frameRate");
+            _offlineMode = serializedObject.FindProperty("m_offlineMode");
         }
 
         public override void OnInspectorGUI()

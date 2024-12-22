@@ -11,7 +11,7 @@ using Debug = UnityEngine.Debug;
 
 namespace FFmpegOut
 {
-    sealed class FFmpegPipe : System.IDisposable
+    internal sealed class FFmpegPipe : System.IDisposable
     {
         #region Public methods
 
@@ -22,7 +22,7 @@ namespace FFmpegOut
         public FFmpegPipe(string arguments)
         {
             // Start FFmpeg subprocess.
-            _subprocess = Process.Start(new ProcessStartInfo
+            m_subprocess = Process.Start(new ProcessStartInfo
             {
                 FileName = ExecutablePath,
                 Arguments = arguments,
@@ -33,70 +33,70 @@ namespace FFmpegOut
                 RedirectStandardError = true,
             });
 
-            _subprocess.EnableRaisingEvents = true;
-            _subprocess.Exited += (_, _) => Debug.Log($"FFmpeg process exited with code {_subprocess.ExitCode}");
+            m_subprocess.EnableRaisingEvents = true;
+            m_subprocess.Exited += (_, _) => Debug.Log($"FFmpeg process exited with code {m_subprocess.ExitCode}");
 
-            _subprocess.OutputDataReceived += (_, args) => Debug.Log("Received: " + args.Data);
-            _subprocess.ErrorDataReceived += (_, args) => Debug.LogError("Received Error: " + args.Data);
+            m_subprocess.OutputDataReceived += (_, args) => Debug.Log("Received: " + args.Data);
+            m_subprocess.ErrorDataReceived += (_, args) => Debug.LogError("Received Error: " + args.Data);
 
             // Start copy/pipe subthreads.
 
-            _copyThread = new Thread(CopyThread);
-            _pipeThread = new Thread(PipeThread);
-            _copyThread.Start();
-            _pipeThread.Start();
+            m_copyThread = new Thread(CopyThread);
+            m_pipeThread = new Thread(PipeThread);
+            m_copyThread.Start();
+            m_pipeThread.Start();
         }
 
         public void PushFrameData(NativeArray<byte> data)
         {
             // Update the copy queue and notify the copy thread with a ping.
-            lock (_copyQueue) _copyQueue.Enqueue(data);
-            _copyPing.Set();
+            lock (m_copyQueue) m_copyQueue.Enqueue(data);
+            m_copyPing.Set();
         }
 
         public void SyncFrameData()
         {
             // Wait for the copy queue to get emptied with using pong
             // notification signals sent from the copy thread.
-            while (_copyQueue.Count > 0) _copyPong.WaitOne();
+            while (m_copyQueue.Count > 0) m_copyPong.WaitOne();
 
             // When using a slower codec (e.g. HEVC, ProRes), frames may be
             // queued too much, and it may end up with an out-of-memory error.
             // To avoid this problem, we wait for pipe queue entries to be
             // comsumed by the pipe thread.
-            while (_pipeQueue.Count > 4) _pipePong.WaitOne();
+            while (m_pipeQueue.Count > 4) m_pipePong.WaitOne();
         }
 
         public string CloseAndGetOutput()
         {
             // Terminate the subthreads.
-            _terminate = true;
+            m_terminate = true;
 
-            _copyPing.Set();
-            _pipePing.Set();
+            m_copyPing.Set();
+            m_pipePing.Set();
 
-            _copyThread.Join();
-            _pipeThread.Join();
+            m_copyThread.Join();
+            m_pipeThread.Join();
 
             // Close FFmpeg subprocess.
-            _subprocess.StandardInput.Close();
-            _subprocess.WaitForExit();
+            m_subprocess.StandardInput.Close();
+            m_subprocess.WaitForExit();
 
-            StreamReader outputReader = _subprocess.StandardError;
+            StreamReader outputReader = m_subprocess.StandardError;
             string error = outputReader.ReadToEnd();
 
-            _subprocess.Close();
-            _subprocess.Dispose();
+            m_subprocess.Close();
+            m_subprocess.Dispose();
 
             outputReader.Close();
             outputReader.Dispose();
 
             // Nullify members (just for ease of debugging).
-            _subprocess = null;
-            _copyThread = null;
-            _pipeThread = null;
-            _copyQueue = null;
-            _pipeQueue = _freeBuffer = null;
+            m_subprocess = null;
+            m_copyThread = null;
+            m_pipeThread = null;
+            m_copyQueue = null;
+            m_pipeQueue = m_freeBuffer = null;
 
             return error;
         }
@@ -107,12 +107,12 @@ namespace FFmpegOut
 
         public void Dispose()
         {
-            if (!_terminate) CloseAndGetOutput();
+            if (!m_terminate) CloseAndGetOutput();
         }
 
         ~FFmpegPipe()
         {
-            if (!_terminate)
+            if (!m_terminate)
                 UnityEngine.Debug.LogError(
                     "An unfinalized FFmpegPipe object was detected. " +
                     "It should be explicitly closed or disposed " +
@@ -124,19 +124,19 @@ namespace FFmpegOut
 
         #region Private members
 
-        Process _subprocess;
-        Thread _copyThread;
-        Thread _pipeThread;
+        private Process m_subprocess;
+        private Thread m_copyThread;
+        private Thread m_pipeThread;
 
-        AutoResetEvent _copyPing = new AutoResetEvent(false);
-        AutoResetEvent _copyPong = new AutoResetEvent(false);
-        AutoResetEvent _pipePing = new AutoResetEvent(false);
-        AutoResetEvent _pipePong = new AutoResetEvent(false);
-        bool _terminate;
+        private AutoResetEvent m_copyPing = new AutoResetEvent(false);
+        private AutoResetEvent m_copyPong = new AutoResetEvent(false);
+        private AutoResetEvent m_pipePing = new AutoResetEvent(false);
+        private AutoResetEvent m_pipePong = new AutoResetEvent(false);
+        private bool m_terminate;
 
-        Queue<NativeArray<byte>> _copyQueue = new Queue<NativeArray<byte>>();
-        Queue<byte[]> _pipeQueue = new Queue<byte[]>();
-        Queue<byte[]> _freeBuffer = new Queue<byte[]>();
+        private Queue<NativeArray<byte>> m_copyQueue = new Queue<NativeArray<byte>>();
+        private Queue<byte[]> m_pipeQueue = new Queue<byte[]>();
+        private Queue<byte[]> m_freeBuffer = new Queue<byte[]>();
 
         public static string ExecutablePath
         {
@@ -164,25 +164,25 @@ namespace FFmpegOut
         // queue. This is required because readback buffers are not under our
         // control -- they'll be disposed before being processed by us. They
         // have to be buffered by end-of-frame.
-        void CopyThread()
+        private void CopyThread()
         {
-            while (!_terminate)
+            while (!m_terminate)
             {
                 // Wait for ping from the main thread.
-                _copyPing.WaitOne();
+                m_copyPing.WaitOne();
 
                 // Process all entries in the copy queue.
-                while (_copyQueue.Count > 0)
+                while (m_copyQueue.Count > 0)
                 {
                     // Retrieve an copy queue entry without dequeuing it.
                     // (We don't want to notify the main thread at this point.)
                     NativeArray<byte> source;
-                    lock (_copyQueue) source = _copyQueue.Peek();
+                    lock (m_copyQueue) source = m_copyQueue.Peek();
 
                     // Try allocating a buffer from the free buffer list.
                     byte[] buffer = null;
-                    if (_freeBuffer.Count > 0)
-                        lock (_freeBuffer) buffer = _freeBuffer.Dequeue();
+                    if (m_freeBuffer.Count > 0)
+                        lock (m_freeBuffer) buffer = m_freeBuffer.Dequeue();
 
                     // Copy the contents of the copy queue entry.
                     if (buffer == null || buffer.Length != source.Length)
@@ -191,33 +191,33 @@ namespace FFmpegOut
                         source.CopyTo(buffer);
 
                     // Push the buffer entry to the pipe queue.
-                    lock (_pipeQueue) _pipeQueue.Enqueue(buffer);
-                    _pipePing.Set(); // Ping the pipe thread.
+                    lock (m_pipeQueue) m_pipeQueue.Enqueue(buffer);
+                    m_pipePing.Set(); // Ping the pipe thread.
 
                     // Dequeue the copy buffer entry and ping the main thread.
-                    lock (_copyQueue) _copyQueue.Dequeue();
-                    _copyPong.Set();
+                    lock (m_copyQueue) m_copyQueue.Dequeue();
+                    m_copyPong.Set();
                 }
             }
         }
 
         // PipeThread - Receives frame entries from the copy thread and push
         // them into the FFmpeg pipe.
-        void PipeThread()
+        private void PipeThread()
         {
-            Stream pipe = _subprocess.StandardInput.BaseStream;
+            Stream pipe = m_subprocess.StandardInput.BaseStream;
 
-            while (!_terminate)
+            while (!m_terminate)
             {
                 // Wait for the ping from the copy thread.
-                _pipePing.WaitOne();
+                m_pipePing.WaitOne();
 
                 // Process all entries in the pipe queue.
-                while (_pipeQueue.Count > 0)
+                while (m_pipeQueue.Count > 0)
                 {
                     // Retrieve a frame entry.
                     byte[] buffer;
-                    lock (_pipeQueue) buffer = _pipeQueue.Dequeue();
+                    lock (m_pipeQueue) buffer = m_pipeQueue.Dequeue();
 
                     // Write it into the FFmpeg pipe.
                     try
@@ -244,8 +244,8 @@ namespace FFmpegOut
                     }
 
                     // Add the buffer to the free buffer list to reuse later.
-                    lock (_freeBuffer) _freeBuffer.Enqueue(buffer);
-                    _pipePong.Set();
+                    lock (m_freeBuffer) m_freeBuffer.Enqueue(buffer);
+                    m_pipePong.Set();
                 }
             }
         }

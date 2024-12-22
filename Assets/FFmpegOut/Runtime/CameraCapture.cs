@@ -3,6 +3,7 @@
 
 using UnityEngine;
 using System.Collections;
+using UnityEngine.Serialization;
 
 namespace FFmpegOut
 {
@@ -11,48 +12,56 @@ namespace FFmpegOut
     {
         #region Public properties
 
-        [SerializeField] int _width = 1920;
+        [FormerlySerializedAs("_width")]
+        [SerializeField]
+        private int m_width = 1920;
 
-        public int width {
-            get { return _width; }
-            set { _width = value; }
+        public int Width {
+            get { return m_width; }
+            set { m_width = value; }
         }
 
-        [SerializeField] int _height = 1080;
+        [FormerlySerializedAs("_height")]
+        [SerializeField]
+        private int m_height = 1080;
 
-        public int height {
-            get { return _height; }
-            set { _height = value; }
+        public int Height {
+            get { return m_height; }
+            set { m_height = value; }
         }
 
-        [SerializeField] FFmpegPreset _preset;
+        [FormerlySerializedAs("_preset")]
+        [SerializeField]
+        private FFmpegPreset m_preset;
 
-        public FFmpegPreset preset {
-            get { return _preset; }
-            set { _preset = value; }
+        public FFmpegPreset Preset {
+            get { return m_preset; }
+            set { m_preset = value; }
         }
 
-        [SerializeField] float _frameRate = 60;
+        [FormerlySerializedAs("_frameRate")]
+        [SerializeField]
+        private float m_frameRate = 60;
 
-        public float frameRate {
-            get { return _frameRate; }
-            set { _frameRate = value; }
+        public float FrameRate {
+            get { return m_frameRate; }
+            set { m_frameRate = value; }
         }
 
         #endregion
 
         #region Private members
 
-        FFmpegSession _session;
-        RenderTexture _tempRT;
-        GameObject _blitter;
+        private FFmpegSession m_session;
+        private RenderTexture m_tempRT;
+        private GameObject m_blitter;
 
-        RenderTextureFormat GetTargetFormat(Camera camera)
+        private RenderTextureFormat GetTargetFormat(Camera camera)
         {
             return camera.allowHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
         }
 
-        int GetAntiAliasingLevel(Camera camera)
+        private int GetAntiAliasingLevel(Camera camera)
         {
             return camera.allowMSAA ? QualitySettings.antiAliasing : 1;
         }
@@ -67,7 +76,7 @@ namespace FFmpegOut
                 gameObject.name,
                 texWidth,
                 texHeight,
-                _frameRate, _preset
+                m_frameRate, m_preset
             );
         }
 
@@ -75,17 +84,17 @@ namespace FFmpegOut
 
         #region Time-keeping variables
 
-        int _frameCount;
-        float _startTime;
-        int _frameDropCount;
+        private int m_frameCount;
+        private float m_startTime;
+        private int m_frameDropCount;
 
-        float FrameTime {
-            get { return _startTime + (_frameCount - 0.5f) / _frameRate; }
+        private float FrameTime {
+            get { return m_startTime + (m_frameCount - 0.5f) / m_frameRate; }
         }
 
-        void WarnFrameDrop()
+        private void WarnFrameDrop()
         {
-            if (++_frameDropCount != 10) return;
+            if (++m_frameDropCount != 10) return;
 
             Debug.LogWarning(
                 "Significant frame droppping was detected. This may introduce " +
@@ -98,91 +107,85 @@ namespace FFmpegOut
 
         #region MonoBehaviour implementation
 
-        void OnValidate()
+        private void OnDisable()
         {
-            _width = Mathf.Max(8, _width);
-            _height = Mathf.Max(8, _height);
-        }
-
-        void OnDisable()
-        {
-            if (_session != null)
+            if (m_session != null)
             {
                 // Close and dispose the FFmpeg session.
-                _session.Close();
-                _session.Dispose();
-                _session = null;
+                m_session.Close();
+                m_session.Dispose();
+                m_session = null;
             }
 
-            if (_tempRT != null)
+            if (m_tempRT != null)
             {
                 // Dispose the frame texture.
                 GetComponent<Camera>().targetTexture = null;
-                Destroy(_tempRT);
-                _tempRT = null;
+                Destroy(m_tempRT);
+                m_tempRT = null;
             }
 
-            if (_blitter != null)
+            if (m_blitter != null)
             {
                 // Destroy the blitter game object.
-                Destroy(_blitter);
-                _blitter = null;
+                Destroy(m_blitter);
+                m_blitter = null;
             }
         }
 
-        IEnumerator Start()
+        private IEnumerator Start()
         {
             // Sync with FFmpeg pipe thread at the end of every frame.
             for (WaitForEndOfFrame eof = new WaitForEndOfFrame();;)
             {
                 yield return eof;
-                _session?.CompletePushFrames();
+                m_session?.CompletePushFrames();
             }
         }
 
-        void Update()
+        private void Update()
         {
             Camera camera = GetComponent<Camera>();
 
             // Lazy initialization
-            if (_session == null)
+            if (m_session == null)
             {
                 // Give a newly created temporary render texture to the camera
                 // if it's set to render to a screen. Also create a blitter
                 // object to keep frames presented on the screen.
                 if (camera.targetTexture == null)
                 {
-                    _tempRT = new RenderTexture(_width, _height, 24, GetTargetFormat(camera));
-                    _tempRT.antiAliasing = 1;
-                    camera.targetTexture = _tempRT;
-                    _blitter = Blitter.CreateInstance(camera);
+                    m_tempRT = new RenderTexture(m_width, m_height, 24, GetTargetFormat(camera));
+                    m_tempRT.antiAliasing = 1;
+                    camera.targetTexture = m_tempRT;
+                    m_blitter = Blitter.CreateInstance(camera);
                 }
 
                 // Start an FFmpeg session.
-                _session = GetSession(
+                m_session = GetSession(
                     camera.targetTexture.width,
                     camera.targetTexture.height
                 );
 
-                _startTime = Time.time;
-                _frameCount = 0;
-                _frameDropCount = 0;
+                m_startTime = Time.time;
+                m_frameCount = 0;
+                m_frameDropCount = 0;
             }
 
             float gap = Time.time - FrameTime;
-            float delta = 1 / _frameRate;
+            float delta = 1 / m_frameRate;
 
             if (gap < 0)
             {
                 // Update without frame data.
-                _session.PushFrame(null);
+                m_session.PushFrame(null);
             }
             else if (gap < delta)
             {
                 // Single-frame behind from the current time:
                 // Push the current frame to FFmpeg.
-                _session.PushFrame(camera.targetTexture);
-                _frameCount++;
+                m_session.PushFrame(camera.targetTexture);
+                m_frameCount++;
             }
             else if (gap < delta * 2)
             {
@@ -190,9 +193,9 @@ namespace FFmpegOut
                 // Push the current frame twice to FFmpeg. Actually this is not
                 // an efficient way to catch up. We should think about
                 // implementing frame duplication in a more proper way. #fixme
-                _session.PushFrame(camera.targetTexture);
-                _session.PushFrame(camera.targetTexture);
-                _frameCount += 2;
+                m_session.PushFrame(camera.targetTexture);
+                m_session.PushFrame(camera.targetTexture);
+                m_frameCount += 2;
             }
             else
             {
@@ -200,10 +203,10 @@ namespace FFmpegOut
                 WarnFrameDrop();
 
                 // Push the current frame to FFmpeg.
-                _session.PushFrame(camera.targetTexture);
+                m_session.PushFrame(camera.targetTexture);
 
                 // Compensate the time delay.
-                _frameCount += Mathf.FloorToInt(gap * _frameRate);
+                m_frameCount += Mathf.FloorToInt(gap * m_frameRate);
             }
         }
 

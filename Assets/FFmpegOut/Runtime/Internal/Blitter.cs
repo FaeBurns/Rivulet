@@ -6,24 +6,24 @@ using UnityEngine.Rendering;
 
 namespace FFmpegOut
 {
-    sealed class Blitter : MonoBehaviour
+    internal sealed class Blitter : MonoBehaviour
     {
         #region Factory method
 
-        static System.Type[] _initialComponents =
+        private static System.Type[] s_initialComponents =
             { typeof(Camera), typeof(Blitter) };
 
         public static GameObject CreateInstance(Camera source)
         {
-            GameObject go = new GameObject("Blitter", _initialComponents);
+            GameObject go = new GameObject("Blitter", s_initialComponents);
             go.hideFlags = HideFlags.HideInHierarchy;
 
             Camera camera = go.GetComponent<Camera>();
-            camera.cullingMask = 1 << UILayer;
+            camera.cullingMask = 1 << UI_LAYER;
             camera.targetDisplay = source.targetDisplay;
 
             Blitter blitter = go.GetComponent<Blitter>();
-            blitter._sourceTexture = source.targetTexture;
+            blitter.m_sourceTexture = source.targetTexture;
 
             return go;
         }
@@ -33,19 +33,19 @@ namespace FFmpegOut
         #region Private members
 
         // Assuming that the 5th layer is "UI". #badcode
-        const int UILayer = 5;
+        private const int UI_LAYER = 5;
 
-        Texture _sourceTexture;
-        Mesh _mesh;
-        Material _material;
+        private Texture m_sourceTexture;
+        private Mesh m_mesh;
+        private Material m_material;
 
-        void OnBeginCameraRendering(Camera camera)
+        private void OnBeginCameraRendering(Camera camera)
         {
-            if (_mesh == null || camera != GetComponent<Camera>()) return;
+            if (m_mesh == null || camera != GetComponent<Camera>()) return;
 
             Graphics.DrawMesh(
-                _mesh, transform.localToWorldMatrix,
-                _material, UILayer, camera
+                m_mesh, transform.localToWorldMatrix,
+                m_material, UI_LAYER, camera
             );
         }
 
@@ -53,21 +53,21 @@ namespace FFmpegOut
 
         #region MonoBehaviour implementation
 
-        void Update()
+        private void Update()
         {
-            if (_mesh == null)
+            if (m_mesh == null)
             {
                 // Index-only triangle mesh
-                _mesh = new Mesh();
-                _mesh.vertices = new Vector3[3];
-                _mesh.triangles = new int [] { 0, 1, 2 };
-                _mesh.bounds = new Bounds(Vector3.zero, Vector3.one);
-                _mesh.UploadMeshData(true);
+                m_mesh = new Mesh();
+                m_mesh.vertices = new Vector3[3];
+                m_mesh.triangles = new int [] { 0, 1, 2 };
+                m_mesh.bounds = new Bounds(Vector3.zero, Vector3.one);
+                m_mesh.UploadMeshData(true);
 
                 // Blitter shader material
                 Shader shader = Shader.Find("Hidden/FFmpegOut/Blitter");
-                _material = new Material(shader);
-                _material.SetTexture("_MainTex", _sourceTexture);
+                m_material = new Material(shader);
+                m_material.SetTexture("_MainTex", m_sourceTexture);
 
                 // Register the camera render callback.
 #if UNITY_URP
@@ -79,9 +79,9 @@ namespace FFmpegOut
             }
         }
 
-        void OnDisable()
+        private void OnDisable()
         {
-            if (_mesh != null)
+            if (m_mesh != null)
             {
                 // Unregister the camera render callback.
 #if UNITY_URP
@@ -92,10 +92,10 @@ namespace FFmpegOut
 #endif
 
                 // Destroy temporary objects.
-                Destroy(_mesh);
-                Destroy(_material);
-                _mesh = null;
-                _material = null;
+                Destroy(m_mesh);
+                Destroy(m_material);
+                m_mesh = null;
+                m_material = null;
             }
         }
 

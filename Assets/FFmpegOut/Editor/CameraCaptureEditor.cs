@@ -34,10 +34,10 @@ namespace FFmpegOut
 
         void OnEnable()
         {
-            _width = serializedObject.FindProperty("_width");
-            _height = serializedObject.FindProperty("_height");
-            _preset = serializedObject.FindProperty("_preset");
-            _frameRate = serializedObject.FindProperty("_frameRate");
+            _width = serializedObject.FindProperty("m_width");
+            _height = serializedObject.FindProperty("m_height");
+            _preset = serializedObject.FindProperty("m_preset");
+            _frameRate = serializedObject.FindProperty("m_frameRate");
 
             Array presets = FFmpegPreset.GetValues(typeof(FFmpegPreset));
             _presetLabels = presets.Cast<FFmpegPreset>().

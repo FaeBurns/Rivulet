@@ -49,7 +49,7 @@ namespace FFmpegOut
 
         public void PushFrame(Texture source)
         {
-            if (_pipe != null)
+            if (m_pipe != null)
             {
                 ProcessQueue();
                 if (source != null) QueueFrame(source);
@@ -58,14 +58,14 @@ namespace FFmpegOut
 
         public void CompletePushFrames()
         {
-            _pipe?.SyncFrameData();
+            m_pipe?.SyncFrameData();
         }
 
         public void Close()
         {
-            if (_pipe != null)
+            if (m_pipe != null)
             {
-                string error = _pipe.CloseAndGetOutput();
+                string error = m_pipe.CloseAndGetOutput();
 
                 if (!string.IsNullOrEmpty(error))
                     Debug.LogWarning(
@@ -73,14 +73,14 @@ namespace FFmpegOut
                         "See the following lines for details:\n" + error
                     );
 
-                _pipe.Dispose();
-                _pipe = null;
+                m_pipe.Dispose();
+                m_pipe = null;
             }
 
-            if (_blitMaterial != null)
+            if (m_blitMaterial != null)
             {
-                UnityEngine.Object.Destroy(_blitMaterial);
-                _blitMaterial = null;
+                UnityEngine.Object.Destroy(m_blitMaterial);
+                m_blitMaterial = null;
             }
         }
 
@@ -93,8 +93,8 @@ namespace FFmpegOut
 
         #region Private objects and constructor/destructor
 
-        FFmpegPipe _pipe;
-        Material _blitMaterial;
+        private FFmpegPipe m_pipe;
+        private Material m_blitMaterial;
 
         protected FFmpegSession(string arguments)
         {
@@ -111,14 +111,14 @@ namespace FFmpegOut
                 );
             else
             {
-                _pipe = new FFmpegPipe(arguments);
+                m_pipe = new FFmpegPipe(arguments);
                 Debug.Log("Initialized Pipe with no errors");
             }
         }
 
         ~FFmpegSession()
         {
-            if (_pipe != null)
+            if (m_pipe != null)
                 Debug.LogError(
                     "An unfinalized FFmpegCapture object was detected. " +
                     "It should be explicitly closed or disposed " +
@@ -130,46 +130,46 @@ namespace FFmpegOut
 
         #region Frame readback queue
 
-        List<AsyncGPUReadbackRequest> _readbackQueue =
+        private List<AsyncGPUReadbackRequest> m_readbackQueue =
             new List<AsyncGPUReadbackRequest>(4);
 
-        void QueueFrame(Texture source)
+        private void QueueFrame(Texture source)
         {
-            if (_readbackQueue.Count > 6)
+            if (m_readbackQueue.Count > 6)
             {
                 Debug.LogWarning("Too many GPU readback requests.");
                 return;
             }
 
             // Lazy initialization of the preprocessing blit shader
-            if (_blitMaterial == null)
+            if (m_blitMaterial == null)
             {
                 Shader shader = Shader.Find("Hidden/FFmpegOut/Preprocess");
-                _blitMaterial = new Material(shader);
+                m_blitMaterial = new Material(shader);
             }
 
             // Blit to a temporary texture and request readback on it.
             RenderTexture rt = RenderTexture.GetTemporary
                 (source.width, source.height, 0, RenderTextureFormat.ARGB32);
-            Graphics.Blit(source, rt, _blitMaterial, 0);
-            _readbackQueue.Add(AsyncGPUReadback.Request(rt));
+            Graphics.Blit(source, rt, m_blitMaterial, 0);
+            m_readbackQueue.Add(AsyncGPUReadback.Request(rt));
             RenderTexture.ReleaseTemporary(rt);
         }
 
-        void ProcessQueue()
+        private void ProcessQueue()
         {
-            while (_readbackQueue.Count > 0)
+            while (m_readbackQueue.Count > 0)
             {
                 // Check if the first entry in the queue is completed.
-                if (!_readbackQueue[0].done)
+                if (!m_readbackQueue[0].done)
                 {
                     // Detect out-of-order case (the second entry in the queue
                     // is completed before the first entry).
-                    if (_readbackQueue.Count > 1 && _readbackQueue[1].done)
+                    if (m_readbackQueue.Count > 1 && m_readbackQueue[1].done)
                     {
                         // We can't allow the out-of-order case, so force it to
                         // be completed now.
-                        _readbackQueue[0].WaitForCompletion();
+                        m_readbackQueue[0].WaitForCompletion();
                     }
                     else
                     {
@@ -179,8 +179,8 @@ namespace FFmpegOut
                 }
 
                 // Retrieve the first entry in the queue.
-                AsyncGPUReadbackRequest req = _readbackQueue[0];
-                _readbackQueue.RemoveAt(0);
+                AsyncGPUReadbackRequest req = m_readbackQueue[0];
+                m_readbackQueue.RemoveAt(0);
 
                 // Error detection
                 if (req.hasError)
@@ -190,7 +190,7 @@ namespace FFmpegOut
                 }
 
                 // Feed the frame to the FFmpeg pipe.
-                _pipe.PushFrameData(req.GetData<byte>());
+                m_pipe.PushFrameData(req.GetData<byte>());
             }
         }
 
