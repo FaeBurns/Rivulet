@@ -18,7 +18,7 @@ public class VideoTest : MonoBehaviour
 
     private void Update()
     {
-        transform.rotation = Quaternion.LerpUnclamped(transform.rotation, Quaternion.LookRotation(m_target), 0.1f);
+        transform.rotation = Quaternion.LerpUnclamped(transform.rotation, Quaternion.LookRotation(m_target), 3f * Time.deltaTime);
     }
 
     private IEnumerator SetTarget()

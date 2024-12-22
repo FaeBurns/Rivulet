@@ -42,27 +42,34 @@ namespace Network
         {
             NetworkStream stream = tcpClient.GetStream();
 
-            Span<byte> buffer = stackalloc byte[4];
-            while (!Application.exitCancellationToken.IsCancellationRequested)
+            try
             {
-                ReadExactly(stream, buffer);
-                int commandRead = BitConverter.ToInt32(buffer);
-
-                switch ((CommandType)(byte)commandRead)
+                Span<byte> buffer = stackalloc byte[4];
+                while (!Application.exitCancellationToken.IsCancellationRequested)
                 {
-                    case CommandType.RESERVED:
-                        Debug.LogError("Received RESERVED command");
-                        break;
-                    case CommandType.NEGOTIATE_STREAM:
-                        NegotiateStream(stream);
-                        break;
-                    case CommandType.EXIT:
-                        ExitStream();
-                        break;
-                    default:
-                        Debug.LogError($"Received {(byte)commandRead}");
-                        throw new IOException("Previous read failed to consume entire buffer or command was unknown.");
+                    ReadExactly(stream, buffer);
+                    int commandRead = BitConverter.ToInt32(buffer);
+
+                    switch ((CommandType)(byte)commandRead)
+                    {
+                        case CommandType.RESERVED:
+                            Debug.LogError("Received RESERVED command");
+                            break;
+                        case CommandType.NEGOTIATE_STREAM:
+                            NegotiateStream(stream);
+                            break;
+                        case CommandType.EXIT:
+                            ExitStream();
+                            break;
+                        default:
+                            Debug.LogError($"Received {(byte)commandRead}");
+                            throw new IOException("Previous read failed to consume entire buffer or command was unknown.");
+                    }
                 }
+            }
+            catch (SocketException)
+            {
+                // network close assumed
             }
         }
 

@@ -10,12 +10,12 @@ namespace FFmpegOut.LiveStream
         [FormerlySerializedAs("_streamAddress")]
         [SerializeField] protected string StreamAddress;
 
-        protected override FFmpegSession GetSession(int texWidth, int texHeight)
+        protected override FFmpegSession GetSession(int texWidth, int texHeight, float frameRate)
         {
             return StreamFFmpegSession.Create(
                 texWidth,
                 texHeight,
-                FrameRate,
+                frameRate,
                 Preset,
                 StreamPreset,
                 StreamAddress);
