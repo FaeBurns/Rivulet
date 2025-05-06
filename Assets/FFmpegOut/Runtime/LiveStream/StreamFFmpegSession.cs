@@ -19,7 +19,7 @@
         {
             // pipe:0 corresponds to stdin
             string ffmpegArguments =
-                $"{UNITY_CAM_TEX_BYTE_FORMAT} {FFMPEG_LOGLEVEL} -framerate {frameRate} -video_size {width}x{height} "
+                $"{UNITY_CAM_TEX_BYTE_FORMAT} {FFMPEG_LOGLEVEL} -framerate {frameRate} -video_size {width}x{height} -sws_flags neighbor "
                 + $"-re -i pipe:0 {encodingPreset.GetOptions()} "
                 + $"{streamPreset.GetOptions()} {address}";
 

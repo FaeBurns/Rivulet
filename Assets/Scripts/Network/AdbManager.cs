@@ -1,5 +1,7 @@
 ﻿using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
+using Application = UnityEngine.Application;
 
 namespace Network
 {
@@ -11,20 +13,39 @@ namespace Network
         /// <param name="port">The port to allow</param>
         public static async Task ForwardPort(int port)
         {
-            await ExecuteCommand($"adb reverse tcp:{port} tcp:{port}");
+            await ExecuteCommand($"reverse tcp:{port} tcp:{port}");
+            UnityEngine.Debug.Log($"port {port} forwarded");
+            
+            // try
+            // {
+            //     await ExecuteCommand($"reverse tcp:{port} tcp:{port}");
+            //     UnityEngine.Debug.Log("ports forwarded");
+            // }
+            // catch
+            // {
+            //     UnityEngine.Debug.LogError($"Failed to forward tcp:{port} tcp:{port}");
+            // }
         }
 
         private static async Task ExecuteCommand(string command)
         {
+            // get adb from streaming assets
+            string path = Path.Combine(Application.streamingAssetsPath, "adb.exe");
+            
             Process process = new Process();
-            process.StartInfo = new ProcessStartInfo("cmd.exe", "/c " + command)
+            process.StartInfo = new ProcessStartInfo(path)
             {
+                Arguments = command,
                 CreateNoWindow = true,
-                UseShellExecute = true,
+                UseShellExecute = false,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
             };
             process.Start();
 
             await WaitForExitAsync(process);
+            UnityEngine.Debug.Log($"adb stdout: {await process.StandardOutput.ReadToEndAsync()}");
+            UnityEngine.Debug.Log($"adb stderr: {await process.StandardError.ReadToEndAsync()}");
         }
 
         private static Task WaitForExitAsync(Process process)

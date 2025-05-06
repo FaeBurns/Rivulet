@@ -21,7 +21,14 @@ namespace Network
         public void StartServer(int port)
         {
             m_server = new TcpListener(IPAddress.Any, port);
-            m_server.Start();
+            try
+            {
+                m_server.Start();
+            }
+            catch
+            {
+                Debug.LogError("Failed to start session server. Old process likely still running");
+            }
         }
 
         public async Task AcceptOneConnectionAsync()
