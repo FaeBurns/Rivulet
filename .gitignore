@@ -65,7 +65,6 @@ sysinfo.txt
 *.app
 
 # Binaries
-*.exe
 
 # Crashlytics generated file
 crashlytics-build.properties
