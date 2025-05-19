@@ -18,17 +18,20 @@ namespace Network
             m_sessionManager = sessionManager;
         }
 
-        public void StartServer(int port)
+        public bool StartServer(int port)
         {
             m_server = new TcpListener(IPAddress.Any, port);
             try
             {
                 m_server.Start();
+                return true;
             }
             catch
             {
                 Debug.LogError("Failed to start session server. Old process likely still running");
             }
+
+            return false;
         }
 
         public async Task AcceptOneConnectionAsync()

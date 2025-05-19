@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Testing;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -39,7 +38,6 @@ namespace PostProcessing
         public void Render(RenderTexture source, RenderTexture destination)
         {
             ApplyCurrentParameters();
-            TestStopwatch monitor = Tester.BeginTimeMonitor($"PP_{m_logName}");
             Stack<RenderTexture> temporaryTextures = new Stack<RenderTexture>();
             temporaryTextures.Push(source);
             for (int i = 0; i < m_shaderPasses; i++)
@@ -57,7 +55,6 @@ namespace PostProcessing
             {
                 RenderTexture.ReleaseTemporary(temporaryTextures.Pop());
             }
-            Tester.EndTimeMonitor(monitor);
         }
 
         public void AdvanceEffect()

@@ -23,7 +23,13 @@ public class SessionManager : MonoBehaviour
     {
         // starting server before port forwarding is more conventient for testing
         m_session = new ServerSessionCommunicator(this);
-        m_session.StartServer(9944);
+        bool serverStarted = m_session.StartServer(9944);
+        if (!serverStarted)
+        {
+            Debug.LogError("Failed to start server. Exiting");
+            Application.Quit();
+            return;
+        }
 
         // try and reverse forward ports
         // no guarantee that ports will be forwarded
